@@ -82,7 +82,7 @@ function main(){
 						return {
 							name: 'enum',
 							raw,
-							value: item.type.value.map(({value}: any) => {
+							value: typeValues.map(({value}: any) => {
 								return value.replace(/"/g, '');
 							})
 						}
