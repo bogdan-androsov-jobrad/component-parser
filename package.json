@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "parse": "tsx src/parse.ts"
+    "parse": "tsx src/parse.ts",
+    "format": "prettier . --write"
   },
   "keywords": [],
   "author": "",
