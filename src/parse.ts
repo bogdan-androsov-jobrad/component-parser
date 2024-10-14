@@ -22,6 +22,9 @@ function main() {
     shouldExtractLiteralValuesFromEnum: true,
     shouldExtractValuesFromUnion: true,
     shouldRemoveUndefinedFromOptional: true,
+    propFilter: {
+      skipPropsWithName: ['ref', 'id', 'key']
+    }
   };
 
   // Parse a file for docgen info
