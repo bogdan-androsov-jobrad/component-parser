@@ -75,7 +75,13 @@ function main() {
             };
           }
 
-          if (name.includes("=>")) {
+          const functionLikeList = ['=>', 'EventHandler'];
+
+          const isFunction = functionLikeList.some((attribute) => {
+            return name.includes(attribute);
+          })
+
+          if (isFunction) {
             return {
               name: "function",
               raw: name,
