@@ -6,6 +6,7 @@ import * as fs from "node:fs";
 import { ArgTypes } from "@storybook/react";
 import { Project, ts } from "ts-morph";
 import SyntaxKind = ts.SyntaxKind;
+import {getTableCategory} from "./utils";
 
 function main() {
   const project = new Project({});
@@ -79,7 +80,11 @@ function main() {
             return {
               name: "enum",
               raw: sanitizedRaw,
-              value: typeValues.map(({ value }: any) => {
+              value: typeValues
+                  .filter(({value}: any) => {
+                    return value !== 'string & {}'
+                  })
+                  .map(({ value }: any) => {
                 return value.replace(/"/g, "");
               }),
             };
@@ -128,6 +133,7 @@ function main() {
               return {
                 name: "object",
                 value: objectType,
+                raw: name
               };
             } finally {
               sourceFile.delete();
@@ -177,6 +183,7 @@ function main() {
           description: item.description,
           type: type as any,
           table: {
+            category: getTableCategory(item.name),
             defaultValue: hasDefaultValue
               ? { summary: defaultValue }
               : undefined,
