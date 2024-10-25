@@ -7,17 +7,17 @@ Small utility that can transform typescript type definition into `argTypes` stru
 ```shell
 pnpm parse --path=/Users/bogdan.androsov/Projects/breakaway-ui/apps/storybook/node_modules/@jobrad-gmbh/breakaway-ui/src/RadioGroup/RadioGroup.tsx
 ```
+
 ### Note:
 
 --path should be absolute path
 
-
 ## Example
 
-
 The following typescript type
+
 ```typescript
-type RadioButtonProps = AriaRadioProps
+type RadioButtonProps = AriaRadioProps;
 ```
 
 Will be transformed into:

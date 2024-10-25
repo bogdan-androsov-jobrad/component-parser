@@ -4,8 +4,12 @@ import * as prettier from "prettier";
 import commandLineArgs from "command-line-args";
 import * as fs from "node:fs";
 import { ArgTypes } from "@storybook/react";
+import { Project, ts } from "ts-morph";
+import SyntaxKind = ts.SyntaxKind;
 
 function main() {
+  const project = new Project({});
+
   const optionDefinitions = [{ name: "path", type: String }];
 
   const cliOptions = commandLineArgs(optionDefinitions) as {
@@ -23,8 +27,8 @@ function main() {
     shouldExtractValuesFromUnion: true,
     shouldRemoveUndefinedFromOptional: true,
     propFilter: {
-      skipPropsWithName: ['ref', 'id', 'key']
-    }
+      skipPropsWithName: ["ref", "id", "key"],
+    },
   };
 
   // Parse a file for docgen info
@@ -66,26 +70,68 @@ function main() {
               return item.type.raw;
             }
 
+            const sanitizedRaw = raw
+              .replace("(string & {})", "")
+              .trim()
+              .replace(/\|$|^\|/g, "")
+              .trim();
+
             return {
               name: "enum",
-              raw,
+              raw: sanitizedRaw,
               value: typeValues.map(({ value }: any) => {
                 return value.replace(/"/g, "");
               }),
             };
           }
 
-          const functionLikeList = ['=>', 'EventHandler'];
+          const functionLikeList = ["=>", "EventHandler"];
 
           const isFunction = functionLikeList.some((attribute) => {
             return name.includes(attribute);
-          })
+          });
 
           if (isFunction) {
             return {
               name: "function",
               raw: name,
             };
+          }
+
+          const isObjectLike = name[0] === "{" || name[name.length - 1] === "}";
+
+          if (isObjectLike) {
+            const sourceFile = project.createSourceFile(
+              "__tempfile__.ts",
+              name,
+            );
+
+            try {
+              const objectType = sourceFile
+                .getFirstDescendantByKind(SyntaxKind.Block)
+                .getChildrenOfKind(SyntaxKind.LabeledStatement)
+                .reduce((acc, item) => {
+                  const key = item
+                    .getFirstChildByKind(SyntaxKind.Identifier)
+                    .getText();
+                  const value = item
+                    .getFirstChildByKind(SyntaxKind.ExpressionStatement)
+                    .getFirstChildByKind(SyntaxKind.Identifier)
+                    .getText();
+
+                  acc[key] = {
+                    name: value,
+                  };
+                  return acc;
+                }, {} as any);
+
+              return {
+                name: "object",
+                value: objectType,
+              };
+            } finally {
+              sourceFile.delete();
+            }
           }
 
           return item.type;
