@@ -7,7 +7,7 @@ export const getTableCategory = (name: string) => {
 		return 'aria';
 	}
 
-	return undefined;
+	return 'core';
 }
 
 const isEventHandler = (name: string) => {
