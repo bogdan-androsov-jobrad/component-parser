@@ -1,12 +1,11 @@
-import docgen, { PropItemType } from "react-docgen-typescript";
+import docgen from "react-docgen-typescript";
 import * as prettier from "prettier";
 // @ts-ignore
 import commandLineArgs from "command-line-args";
 import * as fs from "node:fs";
 import { ArgTypes } from "@storybook/react";
 import { Project, ts } from "ts-morph";
-import SyntaxKind = ts.SyntaxKind;
-import {getTableCategory} from "./utils";
+import {getControl, getDefaultValue, getOptions, getTableCategory, getType} from "./utils";
 
 function main() {
   const project = new Project({});
@@ -56,140 +55,19 @@ function main() {
     return {
       componentName: component.componentName,
       argTypes: component.props.reduce((acc, item) => {
-        const getType = ({ type }: typeof item) => {
-          const { name, raw, value: typeValues } = type;
 
-          if (name === "enum") {
-            if (raw?.includes("ReactNode")) {
-              return {
-                name: "function",
-                raw,
-              };
-            }
-
-            if (item.type.raw === "boolean" || item.type.raw === "string") {
-              return item.type.raw;
-            }
-
-            const sanitizedRaw = raw
-              .replace("(string & {})", "")
-              .trim()
-              .replace(/\|$|^\|/g, "")
-              .trim();
-
-            return {
-              name: "enum",
-              raw: sanitizedRaw,
-              value: typeValues
-                  .filter(({value}: any) => {
-                    return value !== 'string & {}'
-                  })
-                  .map(({ value }: any) => {
-                return value.replace(/"/g, "");
-              }),
-            };
-          }
-
-          const functionLikeList = ["=>", "EventHandler"];
-
-          const isFunction = functionLikeList.some((attribute) => {
-            return name.includes(attribute);
-          });
-
-          if (isFunction) {
-            return {
-              name: "function",
-              raw: name,
-            };
-          }
-
-          const isObjectLike = name[0] === "{" || name[name.length - 1] === "}";
-
-          if (isObjectLike) {
-            const sourceFile = project.createSourceFile(
-              "__tempfile__.ts",
-              name,
-            );
-
-            try {
-              const objectType = sourceFile
-                .getFirstDescendantByKind(SyntaxKind.Block)
-                .getChildrenOfKind(SyntaxKind.LabeledStatement)
-                .reduce((acc, item) => {
-                  const key = item
-                    .getFirstChildByKind(SyntaxKind.Identifier)
-                    .getText();
-                  const value = item
-                    .getFirstChildByKind(SyntaxKind.ExpressionStatement)
-                    .getFirstChildByKind(SyntaxKind.Identifier)
-                    .getText();
-
-                  acc[key] = {
-                    name: value,
-                  };
-                  return acc;
-                }, {} as any);
-
-              return {
-                name: "object",
-                value: objectType,
-                raw: name
-              };
-            } finally {
-              sourceFile.delete();
-            }
-          }
-
-          return item.type;
-        };
-
-        const getControl = (type: PropItemType | string | boolean) => {
-          if (typeof type !== "object") {
-            return undefined;
-          }
-
-          const controlType = {
-            string: "text" as const,
-            boolean: "boolean" as const,
-            enum: "select" as const,
-          }[type.name];
-
-          return controlType
-            ? {
-                type: controlType,
-              }
-            : undefined;
-        };
-
-        const getOptions = (type: PropItemType | string | boolean) => {
-          if (typeof type !== "object") {
-            return undefined;
-          }
-          if (type?.name !== "enum") {
-            return undefined;
-          }
-          return type.value;
-        };
-
-        const type = getType(item);
-        const defaultValue = item.defaultValue?.value;
-
-        const hasDefaultValue =
-          defaultValue !== undefined && defaultValue !== null;
+        const type = getType(project, item);
 
         acc[item.name] = {
+          type: type.name === 'function' ? 'function' : undefined,
           options: getOptions(type),
           control: getControl(type),
           description: item.description,
-          type: type as any,
           table: {
             category: getTableCategory(item.name),
-            defaultValue: hasDefaultValue
-              ? { summary: defaultValue }
-              : undefined,
+            defaultValue: getDefaultValue(item),
             type: {
-              summary:
-                typeof type !== "object" ? type : (type.raw ?? type.name),
+              summary: type.raw ?? type.name,
             },
           },
         };
