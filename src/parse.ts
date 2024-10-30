@@ -58,6 +58,7 @@ function main() {
 
         const type = getType(project, item);
 
+
         acc[item.name] = {
           type: type.name === 'function' ? 'function' : undefined,
           options: getOptions(type),
