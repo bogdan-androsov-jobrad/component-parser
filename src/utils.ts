@@ -27,7 +27,6 @@ export const getType = (project: Project, { type }: {
 
 	const { name, raw, value: typeValues } = type;
 
-
 	if (name === "enum") {
 
 
